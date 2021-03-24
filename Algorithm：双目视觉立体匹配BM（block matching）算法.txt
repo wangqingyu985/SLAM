@@ -1,0 +1,88 @@
+Algorithm：双目视觉立体匹配BM（block matching）算法
+输入：左视图，右视图
+输出：视差图，深度图
+
+第一步：左视图和右视图RGB转灰度图
+输入：左视图，右视图
+输出：左视图灰度图，右视图灰度图
+
+第二步：sobel算子滤波
+输入：左视图灰度图，右视图灰度图
+输出：sobel滤波后左视图，sobel滤波后右视图
+定义水平、竖直方向sobel算子
+for 所有输入图像 do
+    for y 所有行 do
+        for x 所有列 do
+            for sobel算子内的行像素 do
+                for sobel算子内的列像素 do
+                    pix = 对应像素的灰度值
+                    if sobel算子不是第一行 do
+                        cx = pix 与对应水平sobel算子的值相乘并累加
+                    end
+                    if sobel算子不是第一列 do
+                        cy = pix 与对应数值sobel算子的值相乘并累加
+                    end
+                end
+            end
+            输出像素 = cx 与 cy 的平方和
+        end
+    end
+end
+第三步：计算左视差图
+输入：sobel滤波后左视图，sobel滤波后右视图，视差范围（num_disparity），窗口大小（block_size）
+输出：左视差图
+for i 所有行 do
+    for j 所有列 do
+        left_block = sobel滤波后左视图第i行j列像素值对应的窗口内灰度值累加
+        diff_sum = 32767
+        disp = 0
+        for d 遍历sobel滤波后右视图 do
+            right_block = sobel滤波后右视图对应的窗口内灰度值累加
+            sad_val = right_block 与 left_block 的绝对差值
+            if sad_val 小于 diff_sum do
+                diff_sum = sad_val
+                disp = d
+            end
+            对应i行j列的左视差图赋值为disp
+        end
+    end
+end
+
+第四步：计算右视差图
+输入：sobel滤波后左视图，sobel滤波后右视图，视差范围（num_disparity），窗口大小（block_size）
+输出：右视差图
+for i 所有行 do
+    for j 所有列 do
+        right_block = sobel滤波后右视图第i行j列像素值对应的窗口内灰度值累加
+        diff_sum = 32767
+        disp = 0
+        for d 遍历sobel滤波后左视图 do
+            left_block = sobel滤波后左视图对应的窗口内灰度值累加
+            sad_val = right_block 与 left_block 的绝对差值
+            if sad_val 小于 diff_sum do
+                diff_sum = sad_val
+                disp = d
+            end
+            对应i行j列的右视差图赋值为disp
+        end
+    end
+end
+
+第五步：左右一致性检验
+输入：左视差图，右视差图
+输出:视差图
+for h 所有行 do
+    for w 所有列 do
+        left = 左视差图对应像素的值
+        if w 大于 left do
+            right = 右视差图在h行，w-left列对应的像素值
+            dispDiff = left - right
+            if dispDiff 小于 0 do
+                dispDiff取相反数
+            end
+            elif dispDiff 大于 1 do
+                视差图对应像素取0
+            end 
+        end
+    end
+end
